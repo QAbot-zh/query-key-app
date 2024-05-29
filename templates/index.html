@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>查询可用模型</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            box-sizing: border-box;
+        }
+        .submit-container {
+            display: flex;
+            justify-content: space-between;
+        }
+        .submit-container input[type="submit"] {
+            width: 48%;
+            padding: 10px;
+            border: none;
+            cursor: pointer;
+        }
+        .submit-container .submit-query {
+            background-color: #007bff;
+            color: white;
+        }
+        .submit-container .submit-query:hover {
+            background-color: #0056b3;
+        }
+        .submit-container .check-quota {
+            background-color: #28a745;
+            color: white;
+        }
+        .submit-container .check-quota:hover {
+            background-color: #218838;
+        }
+        h2 {
+            margin-top: 20px;
+        }
+        .error {
+            color: red;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>API 信息</h1>
+        {% if error %}
+        <p class="error">{{ error }}</p>
+        {% endif %}
+        <form action="/submit" method="post">
+            <input type="text" id="api_url" name="api_url" required placeholder="接口地址，如：https://api.openai.com">
+            <input type="text" id="api_key" name="api_key" required placeholder="密钥，如：sk-TodayIsThursdayVme50ForKFC">
+            <div class="submit-container">
+                <input type="submit" name="action" value="提交查询" class="submit-query">
+                <input type="submit" name="action" value="检查额度" class="check-quota">
+            </div>
+        </form>
+        {% if response %}
+        <h2>Response:</h2>
+        <pre style="font-size: 16px;">{{ response }}</pre>
+        {% endif %}
+    </div>
+</body>
+</html>
