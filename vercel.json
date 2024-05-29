@@ -1,0 +1,14 @@
+{
+    "version": 2,
+    "builds": [
+        {
+            "src": "app.py", 
+            "use": "@vercel/python",
+            "config":{
+                "buildCommand": "pip install --upgrade pip && cd api && pip install -r requirements.txt  && python app.py",
+                "debug": true
+            }
+        }
+    ],
+    "routes": [{"src": "/(.*)", "dest": "app.py"}]
+}
