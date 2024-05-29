@@ -1,8 +1,10 @@
-from flask import Flask, request, render_template
 import requests, re 
 import datetime
+from flask import Flask, request, g, render_template
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app)
 
 @app.route('/')
 def index():
