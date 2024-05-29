@@ -16,7 +16,7 @@ def submit():
     api_info = request.form.get('api_info')
     if api_info:
         # 使用正则表达式提取接口地址和API密钥
-        url_pattern = r'(https?://[^\s]+|http://[^\s]+)'
+        url_pattern = r'(https?://[^\s，。、！,；;\n]+)'
         key_pattern = r'(sk-[a-zA-Z0-9]+)'
 
         api_url_match = re.search(url_pattern, api_info)
