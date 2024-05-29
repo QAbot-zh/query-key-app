@@ -12,13 +12,30 @@ def index():
 
 @app.route('/submit', methods=['POST'])
 def submit():
+    api_url_lazy, api_key_lazy = None,None
+    api_info = request.form.get('api_info')
+    if api_info:
+        # 使用正则表达式提取接口地址和API密钥
+        url_pattern = r'(https?://[^\s]+|http://[^\s]+)'
+        key_pattern = r'(sk-[a-zA-Z0-9]+)'
+
+        api_url_match = re.search(url_pattern, api_info)
+        api_key_match = re.search(key_pattern, api_info)
+
+        if api_url_match and api_key_match:
+            api_url_lazy = api_url_match.group(0)
+            api_key_lazy = api_key_match.group(0)
+
     action = request.form['action']
     api_url = request.form['api_url']
     api_key = request.form['api_key']
 
     if not api_url or not api_key:
-        error = "接口地址和密钥不能为空"
-        return render_template('index.html', error=error)
+        if not api_url_lazy or not api_key_lazy:
+            error = "接口地址和密钥不能为空"
+            return render_template('index.html', error=error)
+        else:
+            api_url, api_key = api_url_lazy, api_key_lazy
     
     # 使用正则表达式移除以 /v1 起始的部分
     base_url = re.sub(r'^/v1.*', '', api_url)

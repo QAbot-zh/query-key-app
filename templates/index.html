@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>查询可用模型</title>
+    <title> API 信息查询 </title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -20,6 +20,13 @@
             padding: 10px;
             margin: 10px 0;
             box-sizing: border-box;
+        }
+        textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            box-sizing: border-box;
+            height: 100px; /* 设置较大的高度 */
         }
         .submit-container {
             display: flex;
@@ -53,6 +60,19 @@
             margin-bottom: 20px;
         }
     </style>
+    <script>
+        function validateForm() {
+            var apiInfo = document.getElementById('api_info').value.trim();
+            var apiUrl = document.getElementById('api_url').value.trim();
+            var apiKey = document.getElementById('api_key').value.trim();
+
+            if (apiInfo === "" && (apiUrl === "" || apiKey === "")) {
+                alert("请填写懒人专用文本框或者接口地址和密钥");
+                return false;
+            }
+            return true;
+        }
+    </script>
 </head>
 <body>
     <div class="container">
@@ -60,9 +80,10 @@
         {% if error %}
         <p class="error">{{ error }}</p>
         {% endif %}
-        <form action="/submit" method="post">
-            <input type="text" id="api_url" name="api_url" required placeholder="接口地址，如：https://api.openai.com">
-            <input type="text" id="api_key" name="api_key" required placeholder="密钥，如：sk-TodayIsThursdayVme50ForKFC">
+        <form action="/submit" method="post" onsubmit="return validateForm()">
+            <textarea id="api_info" name="api_info" placeholder="懒人专用文本框，支持同时粘贴接口地址和密钥，智能提取，如：https://api.openai.com，sk-TodayIsThursdayVme50ForKFC"></textarea>
+            <input type="text" id="api_url" name="api_url" placeholder="接口地址，如：https://api.openai.com">
+            <input type="text" id="api_key" name="api_key" placeholder="密钥，如：sk-TodayIsThursdayVme50ForKFC">
             <div class="submit-container">
                 <input type="submit" name="action" value="提交查询" class="submit-query">
                 <input type="submit" name="action" value="检查额度" class="check-quota">
