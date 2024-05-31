@@ -33,7 +33,7 @@
             justify-content: space-between;
         }
         .submit-container input[type="submit"] {
-            width: 48%;
+            width: 30%;
             padding: 10px;
             border: none;
             cursor: pointer;
@@ -52,6 +52,13 @@
         .submit-container .check-quota:hover {
             background-color: #218838;
         }
+        .submit-container .clear-form {
+            background-color: #dc3545;
+            color: white;
+        }
+        .submit-container .clear-form:hover {
+            background-color: #c82333;
+        }
         h2 {
             margin-top: 20px;
         }
@@ -62,6 +69,13 @@
     </style>
     <script>
         function validateForm() {
+            var action = event.submitter.name;
+            if (action === "clear") {
+                // If the action is "clear", skip validation
+                clearForm();
+                return false;
+            }
+
             var apiInfo = document.getElementById('api_info').value.trim();
             var apiUrl = document.getElementById('api_url').value.trim();
             var apiKey = document.getElementById('api_key').value.trim();
@@ -72,6 +86,15 @@
             }
             return true;
         }
+        function clearForm() {
+            document.getElementById('api_info').value = "";
+            document.getElementById('api_url').value = "";
+            document.getElementById('api_key').value = "";
+            var responseElement = document.querySelector('pre');
+            if (responseElement) {
+                responseElement.textContent = "";
+            }
+        }
     </script>
 </head>
 <body>
@@ -81,12 +104,13 @@
         <p class="error">{{ error }}</p>
         {% endif %}
         <form action="/submit" method="post" onsubmit="return validateForm()">
-            <textarea id="api_info" name="api_info" placeholder="懒人专用文本框，支持同时粘贴接口地址和密钥，智能提取，如：https://api.openai.com，sk-TodayIsThursdayVme50ForKFC"></textarea>
-            <input type="text" id="api_url" name="api_url" placeholder="接口地址，如：https://api.openai.com">
-            <input type="text" id="api_key" name="api_key" placeholder="密钥，如：sk-TodayIsThursdayVme50ForKFC">
+            <textarea id="api_info" name="api_info" placeholder="懒人专用文本框，支持同时粘贴接口地址和密钥，智能提取，如：https://api.openai.com，sk-TodayIsThursdayVme50ForKFC">{{api_info}}</textarea>
+            <input type="text" id="api_url" name="api_url" placeholder="接口地址，如：https://api.openai.com" value="{{api_url}}">
+            <input type="text" id="api_key" name="api_key" placeholder="密钥，如：sk-TodayIsThursdayVme50ForKFC" value="{{api_key}}">
             <div class="submit-container">
                 <input type="submit" name="action" value="提交查询" class="submit-query">
                 <input type="submit" name="action" value="检查额度" class="check-quota">
+                <input type="submit" name="clear" value="清空表单" class="clear-form">
             </div>
         </form>
         {% if response %}

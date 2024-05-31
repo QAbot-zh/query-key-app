@@ -53,7 +53,7 @@ def submit():
         except ValueError:
             support_models = 'Invalid JSON response'
 
-        return render_template('index.html', response=support_models)
+        return render_template('index.html', response=support_models, api_info=api_info, api_url=api_url, api_key=api_key)
     elif action == '检查额度':
         # 获取总额度
         quota_url = f"{base_url}/dashboard/billing/subscription"
@@ -83,7 +83,7 @@ def submit():
             remain_info = 0
             show_info = "检查额度失败"
 
-        return render_template('index.html', response=show_info)
+        return render_template('index.html', response=show_info, api_info=api_info, api_url=api_url, api_key=api_key)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=os.getenv("PORT", default=5000), debug=True)
