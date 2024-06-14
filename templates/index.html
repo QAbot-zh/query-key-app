@@ -20,6 +20,7 @@
             padding: 10px;
             margin: 10px 0;
             box-sizing: border-box;
+            height: 40px;
         }
         textarea {
             width: 100%;
@@ -31,6 +32,7 @@
         .submit-container {
             display: flex;
             justify-content: space-between;
+            flex-wrap: wrap;
         }
         .submit-container input[type="submit"] {
             width: 30%;
@@ -59,6 +61,27 @@
         .submit-container .clear-form:hover {
             background-color: #c82333;
         }
+        .model-input-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .model-input-container input[type="text"] {
+            width: 70%;
+            margin-right: 10px;
+        }
+        .model-input-container input[type="button"] {
+            width: 28%;
+            background-color: #fe9307;
+            color: white;
+            border: none;
+            cursor: pointer;
+            height: 40px;
+        }
+        .model-input-container input[type="button"]:hover {
+            background-color: #a37c06;
+        }
         h2 {
             margin-top: 20px;
         }
@@ -66,11 +89,100 @@
             color: red;
             margin-bottom: 20px;
         }
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 50px;
+            z-index: 1000;
+            transition: opacity 0.3s ease;
+        }
+        .loading.show {
+            display: flex; /* 当需要显示时将 display 设置为 flex */
+            opacity: 1; /* 确保显示时完全不透明 */
+        }
+
+        .loading.hide {
+            opacity: 0; /* 隐藏时设置为透明 */
+            pointer-events: none; /* 禁止点击 */
+        }
+
+        .loading .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.2); /* 半透明白色边框 */
+            border-top: 4px solid #00D1B2; /* 动态颜色，例如亮绿色 */
+            border-radius: 50%; /* 圆形 */
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite; /* 旋转动画 */
+            margin-right: 20px; /* 和文字保持一定距离 */
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .custom-alert {
+            display: none; /* 默认隐藏 */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6); /* 背景半透明 */
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+        }
+
+        .custom-alert-content {
+            background: white; /* 白色背景 */
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* 轻微阴影 */
+            text-align: center;
+        }
+
+        .custom-alert-content p {
+            margin: 0 0 20px; /* 间距 */
+        }
+
+        .custom-alert-content button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #00D1B2; /* 按钮背景颜色 */
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .custom-alert-content button:hover {
+            background-color: #00A994; /* 按钮悬停颜色 */
+        }
     </style>
     <script>
-        function validateForm() {
-            var action = event.submitter.name;
-            if (action === "clear") {
+        function showAlert(message) {
+            document.getElementById('alertMessage').textContent = message;
+            document.getElementById('customAlert').style.display = 'flex';
+        }
+
+        function closeAlert() {
+            document.getElementById('customAlert').style.display = 'none';
+        }
+
+        function validateForm(event) {
+            event.preventDefault();
+            var form = event.target;
+            var action = form.querySelector('input[type="submit"]:focus').value;
+
+            if (action === "清空表单") {
                 // If the action is "clear", skip validation
                 clearForm();
                 return false;
@@ -81,34 +193,115 @@
             var apiKey = document.getElementById('api_key').value.trim();
 
             if (apiInfo === "" && (apiUrl === "" || apiKey === "")) {
-                alert("请填写懒人专用文本框或者接口地址和密钥");
+                showAlert("请填写懒人专用文本框或者接口地址和密钥");
                 return false;
             }
-            return true;
+            // 显示加载指示器
+            const loading = document.getElementById('loading');
+            loading.classList.remove('hide');
+            loading.classList.add('show');
+
+            // 将action添加到隐藏输入框，然后提交
+            var hiddenActionInput = document.createElement('input');
+            hiddenActionInput.type = 'hidden';
+            hiddenActionInput.name = 'action';
+            hiddenActionInput.value = action;
+            form.appendChild(hiddenActionInput);
+
+            form.submit();
         }
         function clearForm() {
             document.getElementById('api_info').value = "";
             document.getElementById('api_url').value = "";
             document.getElementById('api_key').value = "";
+            document.getElementById('model_name').value = "";
             var responseElement = document.querySelector('pre');
             if (responseElement) {
                 responseElement.textContent = "";
             }
+            var modelInputContainer = document.getElementById('model-input-container');
+            modelInputContainer.style.display = "none";
         }
+        function testModel() {
+            var apiUrl = document.getElementById('api_url').value.trim();
+            var apiKey = document.getElementById('api_key').value.trim();
+            var modelName = document.getElementById('model_name').value.trim();
+            if (modelName === "") {
+                showAlert("请输入模型名称");
+                return;
+            }
+            // 显示加载指示器
+            const loading = document.getElementById('loading');
+            loading.classList.remove('hide');
+            loading.classList.add('show');
+
+            fetch('/test_model', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    api_url: apiUrl,
+                    api_key: apiKey,
+                    model_name: modelName
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                loading.classList.remove('show');
+                loading.classList.add('hide');
+                if (data.success) {
+                    showAlert("测试成功, 响应时间: " + data.response_time.toFixed(2) + " 秒");
+                } else {
+                    showAlert("测试失败: " + data.message);
+                }
+            })
+            .catch(error => {
+                loading.classList.remove('show');
+                loading.classList.add('hide');
+                showAlert("测试失败: " + error.message);
+            });
+        }
+        window.onload = function() {
+            var apiInfo = document.getElementById('api_info').value.trim();
+            var apiUrl = document.getElementById('api_url').value.trim();
+            var apiKey = document.getElementById('api_key').value.trim();
+            var modelInputContainer = document.getElementById('model-input-container');
+
+            if (apiInfo === "" && (apiUrl === "" || apiKey === "")) {
+                modelInputContainer.style.display = "none";
+            } else {
+                modelInputContainer.style.display = "flex";
+            }
+        };
     </script>
 </head>
 <body>
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        请求已提交，请稍候...
+    </div>
+    <div id="customAlert" class="custom-alert">
+        <div class="custom-alert-content">
+            <p id="alertMessage"></p>
+            <button onclick="closeAlert()">关闭</button>
+        </div>
+    </div>
     <div class="container">
         <h1>API 信息</h1>
         {% if error %}
         <p class="error">{{ error }}</p>
         {% endif %}
-        <form action="/submit" method="post" onsubmit="return validateForm()">
+        <form action="/submit" method="post" onsubmit="return validateForm(event)">
             <textarea id="api_info" name="api_info" placeholder="懒人专用文本框，支持同时粘贴接口地址和密钥，智能提取，如：https://api.openai.com，sk-TodayIsThursdayVme50ForKFC">{{api_info}}</textarea>
             <input type="text" id="api_url" name="api_url" placeholder="接口地址，如：https://api.openai.com" value="{{api_url}}">
             <input type="text" id="api_key" name="api_key" placeholder="密钥，如：sk-TodayIsThursdayVme50ForKFC" value="{{api_key}}">
+            <div class="model-input-container" id="model-input-container">
+                <input type="text" id="model_name" name="model_name" placeholder="模型名称，如：gpt-3.5-turbo">
+                <input type="button" name="test_model" value="测试模型" onclick="testModel()">
+            </div>
             <div class="submit-container">
-                <input type="submit" name="action" value="提交查询" class="submit-query">
+                <input type="submit" name="action" value="模型查询" class="submit-query">
                 <input type="submit" name="action" value="检查额度" class="check-quota">
                 <input type="submit" name="clear" value="清空表单" class="clear-form">
             </div>

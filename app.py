@@ -1,7 +1,8 @@
 import requests, re, os
 import datetime
-from flask import Flask, request, g, render_template
+from flask import Flask, request, g, render_template, jsonify
 from werkzeug.middleware.proxy_fix import ProxyFix
+import time
 
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app)
@@ -44,7 +45,7 @@ def submit():
         'Authorization': f'Bearer {api_key}'
         }
     
-    if action == '提交查询':
+    if action == '模型查询':
         model_url = f"{base_url}/v1/models"
         response = requests.get(model_url, headers=headers)
         try:
@@ -84,6 +85,37 @@ def submit():
             show_info = "检查额度失败"
 
         return render_template('index.html', response=show_info, api_info=api_info, api_url=api_url, api_key=api_key)
+
+@app.route('/test_model', methods=['POST'])
+def test_model():
+    api_url = request.json.get('api_url')
+    api_key = request.json.get('api_key')
+    model_name = request.json.get('model_name')
+
+    if not api_url or not api_key or not model_name:
+        return jsonify({"success": False, "message": "Missing API URL, API Key, or Model Name"}), 400
+
+    headers = {
+        'Authorization': f'Bearer {api_key}',
+        'Content-Type': 'application/json'
+    }
+
+    test_url = f"{api_url}/v1/chat/completions"
+    data = {
+        "model": model_name,
+        "messages": [
+            {"role": "user", "content": "say hi"}
+        ],
+        "max_tokens": 2
+    }
+    tic = time.time()
+    response = requests.post(test_url, headers=headers, json=data)
+    duration = time.time() - tic
+
+    if response.status_code == 200:
+        return jsonify({"success": True, "message": "测试成功", "response_time": duration})
+    else:
+        return jsonify({"success": False, "message": response.text}), response.status_code
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=os.getenv("PORT", default=5000), debug=True)
