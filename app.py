@@ -15,10 +15,13 @@ def index():
 def submit():
     api_url_lazy, api_key_lazy = None,None
     api_info = request.form.get('api_info')
+    api_key_head = request.form.get('api_key_head')
     if api_info:
         # 使用正则表达式提取接口地址和API密钥
         url_pattern = r'(https?://[^\s，。、！,；;\n]+)'
-        key_pattern = r'(sk-[a-zA-Z0-9]+)'
+        api_key_head = api_key_head or "sk-"
+        key_pattern = fr'({re.escape(api_key_head)}[a-zA-Z0-9_]+)'
+        print(key_pattern)
 
         api_url_match = re.search(url_pattern, api_info)
         api_key_match = re.search(key_pattern, api_info)
@@ -33,7 +36,7 @@ def submit():
 
     if not api_url or not api_key:
         if not api_url_lazy or not api_key_lazy:
-            error = "接口地址和密钥不能为空"
+            error = "未提取到正确的接口地址和密钥"
             return render_template('index.html', error=error)
         else:
             api_url, api_key = api_url_lazy, api_key_lazy
@@ -54,7 +57,7 @@ def submit():
         except ValueError:
             support_models = 'Invalid JSON response'
 
-        return render_template('index.html', response=support_models, api_info=api_info, api_url=api_url, api_key=api_key)
+        return render_template('index.html', response=support_models, api_info=api_info, api_url=api_url, api_key=api_key, api_key_head=api_key_head)
     elif action == '检查额度':
         # 获取总额度
         quota_url = f"{base_url}/dashboard/billing/subscription"
@@ -84,7 +87,7 @@ def submit():
             remain_info = 0
             show_info = "检查额度失败"
 
-        return render_template('index.html', response=show_info, api_info=api_info, api_url=api_url, api_key=api_key)
+        return render_template('index.html', response=show_info, api_info=api_info, api_url=api_url, api_key=api_key, api_key_head=api_key_head)
 
 @app.route('/test_model', methods=['POST'])
 def test_model():

@@ -191,6 +191,7 @@
             var apiInfo = document.getElementById('api_info').value.trim();
             var apiUrl = document.getElementById('api_url').value.trim();
             var apiKey = document.getElementById('api_key').value.trim();
+            var apiKeyHead = document.getElementById('api_key_head').value.trim();
 
             if (apiInfo === "" && (apiUrl === "" || apiKey === "")) {
                 showAlert("请填写懒人专用文本框或者接口地址和密钥");
@@ -214,6 +215,7 @@
             document.getElementById('api_info').value = "";
             document.getElementById('api_url').value = "";
             document.getElementById('api_key').value = "";
+            document.getElementById('api_key_head').value = "";
             document.getElementById('model_name').value = "";
             var responseElement = document.querySelector('pre');
             if (responseElement) {
@@ -266,6 +268,7 @@
             var apiInfo = document.getElementById('api_info').value.trim();
             var apiUrl = document.getElementById('api_url').value.trim();
             var apiKey = document.getElementById('api_key').value.trim();
+            var apiKeyHead = document.getElementById('api_key_head').value.trim();
             var modelInputContainer = document.getElementById('model-input-container');
 
             if (apiInfo === "" && (apiUrl === "" || apiKey === "")) {
@@ -296,6 +299,7 @@
             <textarea id="api_info" name="api_info" placeholder="懒人专用文本框，支持同时粘贴接口地址和密钥，智能提取，如：https://api.openai.com，sk-TodayIsThursdayVme50ForKFC">{{api_info}}</textarea>
             <input type="text" id="api_url" name="api_url" placeholder="接口地址，如：https://api.openai.com" value="{{api_url}}">
             <input type="text" id="api_key" name="api_key" placeholder="密钥，如：sk-TodayIsThursdayVme50ForKFC" value="{{api_key}}">
+            <input type="text" id="api_key_head" name="api_key_head" placeholder="支持填入密钥头部以适配不同的key类型，非必填，如：sk-" value="{{api_key_head}}">
             <div class="model-input-container" id="model-input-container">
                 <input type="text" id="model_name" name="model_name" placeholder="模型名称，如：gpt-3.5-turbo">
                 <input type="button" name="test_model" value="测试模型" onclick="testModel()">
