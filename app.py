@@ -67,8 +67,8 @@ def submit():
                     else:
                         unavailable_chat_models.append(model_name)
             support_models = "已校验可用chat模型：\n" + "\n".join(available_chat_models) + "\n\n" + "已校验不可用chat模型：\n" + "\n".join(unavailable_chat_models) + "\n\n" + "未校验模型（非chat模型）：\n" + "\n".join(not_chat_models)
-        except ValueError:
-            support_models = 'Invalid JSON response'
+        except:
+            support_models = response.text
 
         return render_template('index.html', response=support_models, api_info=api_info, api_url=api_url, api_key=api_key, api_key_head=api_key_head)
     elif action == '检查额度':
