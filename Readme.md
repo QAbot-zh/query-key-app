@@ -17,6 +17,14 @@
     - 打开浏览器：http://localhost:5000
 
 - serverless 部署
+    - vercel
+    - zeabur: 需要添加环境变量 ZBPACK_SERVERLESS 和 PORT
 
 ![show](show.png)
+
+-----
+
+* 新增feature：模型可用性检测
+
+![available_models](模型可用性检测.png)
 
