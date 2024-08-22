@@ -410,7 +410,6 @@
 
             <!-- 如果没有匹配任何部分，显示整个原有内容 -->
             {% if not ('已校验可用chat模型：' in response or '已校验不可用chat模型：' in response or '未校验模型（不对非chat模型进行校验）：' in response) %}
-                <h3>支持的模型列表：</h3>
                 <div class="default-response">
                     <pre>{{ response }}</pre>
                 </div>

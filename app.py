@@ -55,7 +55,7 @@ def submit():
         try:
             response_json = response.json()
             if not model_health_check:
-                support_models = "\n".join([item['id'] for item in response_json['data']])
+                support_models = "支持的模型列表：\n\n" + "\n".join([item['id'] for item in response_json['data']])
             else:
                 available_chat_models,unavailable_chat_models,not_chat_models = [],[],[]
                 not_chat_pattern = r'^(dall-e|mj|midjourney|stable-diffusion|playground|flux|swap_face|tts-|whisper-|text-|emb-)'
