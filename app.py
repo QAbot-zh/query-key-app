@@ -16,12 +16,13 @@ def submit():
     api_url_lazy, api_key_lazy = None,None
     api_info = request.form.get('api_info')
     api_key_head = request.form.get('api_key_head')
+    model_health_check = request.form.get('model_health_check') == 'on'
+
     if api_info:
         # 使用正则表达式提取接口地址和API密钥
         url_pattern = r'(https?://[^\s，。、！,；;\n]+)'
         api_key_head = api_key_head or "sk-"
         key_pattern = fr'({re.escape(api_key_head)}[a-zA-Z0-9_]+)'
-        # print(key_pattern)
 
         api_url_match = re.search(url_pattern, api_info)
         api_key_match = re.search(key_pattern, api_info)
@@ -48,25 +49,27 @@ def submit():
         'Authorization': f'Bearer {api_key}'
         }
     
-    if action == '模型查询':
+    if action == '拉取模型列表':
         model_url = f"{base_url}/v1/models"
         response = requests.get(model_url, headers=headers)
         try:
             response_json = response.json()
-            # support_models = "\n".join([item['id'] for item in response_json['data']])
-            available_chat_models,unavailable_chat_models,not_chat_models = [],[],[]
-            not_chat_pattern = r'^(dall-e|mj|midjourney|stable-diffusion|swap_face|tts-|whisper-|text-|emb-)'
-            for item in response_json['data']:
-                model_name = item['id']
-                if re.match(not_chat_pattern, model_name):
-                    not_chat_models.append(model_name)
-                else:
-                    response = test_one_model(api_url, api_key, model_name)
-                    if response.status_code == 200 or response.status_code == 201:
-                        available_chat_models.append(model_name)
+            if not model_health_check:
+                support_models = "\n".join([item['id'] for item in response_json['data']])
+            else:
+                available_chat_models,unavailable_chat_models,not_chat_models = [],[],[]
+                not_chat_pattern = r'^(dall-e|mj|midjourney|stable-diffusion|playground|flux|swap_face|tts-|whisper-|text-|emb-)'
+                for item in response_json['data']:
+                    model_name = item['id']
+                    if re.match(not_chat_pattern, model_name) or ("flux" in model_name):
+                        not_chat_models.append(model_name)
                     else:
-                        unavailable_chat_models.append(model_name)
-            support_models = "已校验可用chat模型：\n" + "\n".join(available_chat_models) + "\n\n" + "已校验不可用chat模型：\n" + "\n".join(unavailable_chat_models) + "\n\n" + "未校验模型（非chat模型）：\n" + "\n".join(not_chat_models)
+                        response = test_one_model(api_url, api_key, model_name)
+                        if response.status_code == 200 or response.status_code == 201:
+                            available_chat_models.append(model_name)
+                        else:
+                            unavailable_chat_models.append(model_name)
+                support_models = "已校验可用chat模型：\n" + "\n".join(available_chat_models) + "\n\n" + "已校验不可用chat模型：\n" + "\n".join(unavailable_chat_models) + "\n\n" + "未校验模型（不对非chat模型进行校验）：\n" + "\n".join(not_chat_models)
         except:
             support_models = response.text
 

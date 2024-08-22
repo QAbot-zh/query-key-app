@@ -194,6 +194,36 @@
             font-size: 16px;
             color: black;
         }
+        /* 样式容器 */
+        .model-health-check {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        /* 样式复选框 */
+        .model-health-check input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            accent-color: #4CAF50; /* 复选框选中的颜色 */
+        }
+
+        /* 样式标签 */
+        .model-health-check label {
+            font-size: 16px;
+            color: #333;
+            cursor: pointer;
+        }
+
+        /* 鼠标悬停时的样式 */
+        .model-health-check input[type="checkbox"]:hover {
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .model-health-check label:hover {
+            color: #4CAF50;
+        }
     </style>
     <script>
         function showAlert(message) {
@@ -225,6 +255,9 @@
                 showAlert("请填写懒人专用文本框或者接口地址和密钥");
                 return false;
             }
+            // 获取复选框状态
+            var modelHealthCheck = document.getElementById('model_health_check').checked;
+
             // 显示加载指示器
             const loading = document.getElementById('loading');
             loading.classList.remove('hide');
@@ -236,6 +269,12 @@
             hiddenActionInput.name = 'action';
             hiddenActionInput.value = action;
             form.appendChild(hiddenActionInput);
+
+            var hiddenHealthCheckInput = document.createElement('input');
+            hiddenHealthCheckInput.type = 'hidden';
+            hiddenHealthCheckInput.name = 'model_health_check';
+            hiddenHealthCheckInput.value = modelHealthCheck;
+            form.appendChild(hiddenHealthCheckInput);
 
             form.submit();
         }
@@ -333,8 +372,13 @@
                 <input type="text" id="model_name" name="model_name" placeholder="模型名称，如：gpt-3.5-turbo">
                 <input type="button" name="test_model" value="测试单个chat模型" onclick="testModel()">
             </div>
+            <!-- Add the checkbox for Model Health Check -->
+            <div class="model-health-check">
+                <input type="checkbox" id="model_health_check" name="model_health_check">
+                <label for="model_health_check">是否批量测活</label>
+            </div>
             <div class="submit-container">
-                <input type="submit" name="action" value="模型查询" class="submit-query">
+                <input type="submit" name="action" value="拉取模型列表" class="submit-query">
                 <input type="submit" name="action" value="检查额度" class="check-quota">
                 <input type="submit" name="clear" value="清空表单" class="clear-form">
             </div>
@@ -357,15 +401,16 @@
             {% endif %}
 
             <!-- 显示未校验模型（非chat模型）的部分 -->
-            {% if '未校验模型（非chat模型）：' in response %}
+            {% if '未校验模型（不对非chat模型进行校验）：' in response %}
                 <div class="unchecked-models">
-                    <h3>未校验模型（非chat模型）：</h3>
-                    <pre>{{ response.split('未校验模型（非chat模型）：')[1].strip() }}</pre>
+                    <h3>未校验模型（不对非chat模型进行校验）：</h3>
+                    <pre>{{ response.split('未校验模型（不对非chat模型进行校验）：')[1].strip() }}</pre>
                 </div>
             {% endif %}
 
             <!-- 如果没有匹配任何部分，显示整个原有内容 -->
-            {% if not ('已校验可用chat模型：' in response or '已校验不可用chat模型：' in response or '未校验模型（非chat模型）：' in response) %}
+            {% if not ('已校验可用chat模型：' in response or '已校验不可用chat模型：' in response or '未校验模型（不对非chat模型进行校验）：' in response) %}
+                <h3>支持的模型列表：</h3>
                 <div class="default-response">
                     <pre>{{ response }}</pre>
                 </div>
