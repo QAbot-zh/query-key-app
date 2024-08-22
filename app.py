@@ -21,7 +21,7 @@ def submit():
         url_pattern = r'(https?://[^\s，。、！,；;\n]+)'
         api_key_head = api_key_head or "sk-"
         key_pattern = fr'({re.escape(api_key_head)}[a-zA-Z0-9_]+)'
-        print(key_pattern)
+        # print(key_pattern)
 
         api_url_match = re.search(url_pattern, api_info)
         api_key_match = re.search(key_pattern, api_info)
@@ -53,7 +53,20 @@ def submit():
         response = requests.get(model_url, headers=headers)
         try:
             response_json = response.json()
-            support_models = "\n".join([item['id'] for item in response_json['data']])
+            # support_models = "\n".join([item['id'] for item in response_json['data']])
+            available_chat_models,unavailable_chat_models,not_chat_models = [],[],[]
+            not_chat_pattern = r'^(dall-e|mj|midjourney|stable-diffusion|swap_face|tts-|whisper-|text-|emb-)'
+            for item in response_json['data']:
+                model_name = item['id']
+                if re.match(not_chat_pattern, model_name):
+                    not_chat_models.append(model_name)
+                else:
+                    response = test_one_model(api_url, api_key, model_name)
+                    if response.status_code == 200 or response.status_code == 201:
+                        available_chat_models.append(model_name)
+                    else:
+                        unavailable_chat_models.append(model_name)
+            support_models = "已校验可用chat模型：\n" + "\n".join(available_chat_models) + "\n\n" + "已校验不可用chat模型：\n" + "\n".join(unavailable_chat_models) + "\n\n" + "未校验模型（非chat模型）：\n" + "\n".join(not_chat_models)
         except ValueError:
             support_models = 'Invalid JSON response'
 
@@ -89,15 +102,7 @@ def submit():
 
         return render_template('index.html', response=show_info, api_info=api_info, api_url=api_url, api_key=api_key, api_key_head=api_key_head)
 
-@app.route('/test_model', methods=['POST'])
-def test_model():
-    api_url = request.json.get('api_url')
-    api_key = request.json.get('api_key')
-    model_name = request.json.get('model_name')
-
-    if not api_url or not api_key or not model_name:
-        return jsonify({"success": False, "message": "Missing API URL, API Key, or Model Name"}), 400
-
+def test_one_model(api_url, api_key, model_name):
     headers = {
         'Authorization': f'Bearer {api_key}',
         'Content-Type': 'application/json'
@@ -111,11 +116,23 @@ def test_model():
         ],
         "max_tokens": 2
     }
-    tic = time.time()
     response = requests.post(test_url, headers=headers, json=data)
+    return response
+
+@app.route('/test_model', methods=['POST'])
+def test_model():
+    api_url = request.json.get('api_url')
+    api_key = request.json.get('api_key')
+    model_name = request.json.get('model_name')
+
+    if not api_url or not api_key or not model_name:
+        return jsonify({"success": False, "message": "Missing API URL, API Key, or Model Name"}), 400
+
+    tic = time.time()
+    response = test_one_model(api_url, api_key, model_name)
     duration = time.time() - tic
 
-    if response.status_code == 200:
+    if response.status_code == 200 or response.status_code == 201:
         return jsonify({"success": True, "message": "测试成功", "response_time": duration})
     else:
         return jsonify({"success": False, "message": response.text}), response.status_code

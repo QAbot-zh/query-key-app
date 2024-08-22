@@ -166,6 +166,34 @@
         .custom-alert-content button:hover {
             background-color: #00A994; /* 按钮悬停颜色 */
         }
+        .response-container {
+            font-size: 16px;
+        }
+
+        .response-container pre {
+            white-space: pre-wrap; /* 保持空白符和换行符 */
+            border: 1px solid #ddd; /* 边框样式 */
+            padding: 10px; /* 内边距 */
+            background-color: #f9f9f9; /* 背景色 */
+            margin-bottom: 20px; /* 分隔不同部分的间距 */
+        }
+
+        .valid-models {
+            color: green;
+        }
+
+        .invalid-models {
+            color: red;
+        }
+
+        .unchecked-models {
+            color: orange;
+        }
+
+        .default-response {
+            font-size: 16px;
+            color: black;
+        }
     </style>
     <script>
         function showAlert(message) {
@@ -291,7 +319,8 @@
         </div>
     </div>
     <div class="container">
-        <h1>API 信息</h1>
+        <h1>API 信息测活</h1>
+        <h3>（仅适配 oneapi/newapi 等中转格式）</h3>
         {% if error %}
         <p class="error">{{ error }}</p>
         {% endif %}
@@ -302,7 +331,7 @@
             <input type="text" id="api_key_head" name="api_key_head" placeholder="支持填入密钥头部以适配不同的key类型，非必填，如：sk-" value="{{api_key_head}}">
             <div class="model-input-container" id="model-input-container">
                 <input type="text" id="model_name" name="model_name" placeholder="模型名称，如：gpt-3.5-turbo">
-                <input type="button" name="test_model" value="测试模型" onclick="testModel()">
+                <input type="button" name="test_model" value="测试单个chat模型" onclick="testModel()">
             </div>
             <div class="submit-container">
                 <input type="submit" name="action" value="模型查询" class="submit-query">
@@ -310,10 +339,37 @@
                 <input type="submit" name="clear" value="清空表单" class="clear-form">
             </div>
         </form>
-        {% if response %}
-        <h2>Response:</h2>
-        <pre style="font-size: 16px;">{{ response }}</pre>
-        {% endif %}
+        <div class="response-container">
+            <!-- 显示已校验可用chat模型的部分 -->
+            {% if '已校验可用chat模型：' in response %}
+            <div class="valid-models">
+                <h3>已校验可用chat模型：</h3>
+                <pre>{{ response.split('已校验可用chat模型：')[1].split('已校验不可用chat模型：')[0].strip() }}</pre>
+            </div>
+            {% endif %}
+
+            <!-- 显示已校验不可用chat模型的部分 -->
+            {% if '已校验不可用chat模型：' in response %}
+                <div class="invalid-models">
+                    <h3>已校验不可用chat模型：</h3>
+                    <pre>{{ response.split('已校验不可用chat模型：')[1].split('未校验模型（非chat模型）：')[0].strip() }}</pre>
+                </div>
+            {% endif %}
+
+            <!-- 显示未校验模型（非chat模型）的部分 -->
+            {% if '未校验模型（非chat模型）：' in response %}
+                <div class="unchecked-models">
+                    <h3>未校验模型（非chat模型）：</h3>
+                    <pre>{{ response.split('未校验模型（非chat模型）：')[1].strip() }}</pre>
+                </div>
+            {% endif %}
+
+            <!-- 如果没有匹配任何部分，显示整个原有内容 -->
+            {% if not ('已校验可用chat模型：' in response or '已校验不可用chat模型：' in response or '未校验模型（非chat模型）：' in response) %}
+                <div class="default-response">
+                    <pre>{{ response }}</pre>
+                </div>
+            {% endif %}
     </div>
 </body>
 </html>
