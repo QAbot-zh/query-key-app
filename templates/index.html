@@ -194,29 +194,44 @@
             font-size: 16px;
             color: black;
         }
-        /* 样式容器 */
+        /* 整体容器样式 */
+        .model-health-check-timeout-concurrency {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 800px; /* 增加最大宽度 */
+            margin: 15px 0;
+            flex-wrap: wrap; /* 允许在需要时换行 */
+        }
+
+        /* 健康检查容器样式 */
         .model-health-check {
             display: flex;
             align-items: center;
-            margin-right: 20px; /* 增加右边距以分隔复选框和超时时间 */
+            margin-right: 20px;
+            margin-bottom: 10px; /* 添加底部边距 */
         }
 
-        /* 样式复选框 */
+        /* 复选框样式 */
         .model-health-check input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
+            width: 18px;
+            height: 18px;
             margin-right: 10px;
-            accent-color: #4CAF50; /* 复选框选中的颜色 */
+            accent-color: #4CAF50;
         }
 
-        /* 样式标签 */
-        .model-health-check label {
-            font-size: 16px;
+        /* 标签样式 */
+        .model-health-check label,
+        .model-timeout label,
+        .model-concurrency label {
+            font-size: 14px;
             color: #333;
             cursor: pointer;
+            white-space: nowrap;
         }
 
-        /* 鼠标悬停时的样式 */
+        /* 鼠标悬停样式 */
         .model-health-check input[type="checkbox"]:hover {
             box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
         }
@@ -225,26 +240,43 @@
             color: #4CAF50;
         }
 
-        /* 样式超时时间容器 */
+        /* 超时时间容器样式 */
         .model-timeout {
             display: flex;
             align-items: center;
+            margin-right: 20px;
+            margin-bottom: 10px; /* 添加底部边距 */
         }
 
-        /* 样式超时时间输入框 */
-        .model-timeout input[type="number"] {
+        /* 超时时间输入框样式 */
+        .model-timeout input[type="number"],
+        .model-concurrency input[type="number"] {
             margin-left: 10px;
-            height: 20px;
-            width: 60px; /* 可以根据需要调整宽度 */
+            height: 24px;
+            width: 60px;
+            padding: 0 5px;
         }
 
-        /* 样式组合容器 */
-        .model-health-check-timeout {
+        /* 并发数容器样式 */
+        .model-concurrency {
             display: flex;
-            justify-content: space-between;
-            margin-right: 20px; /* 增加右边距以分隔复选框和超时时间 */
-            margin-top: 10px;
-            margin-bottom: 10px;
+            align-items: center;
+            margin-bottom: 10px; /* 添加底部边距 */
+        }
+
+        /* 响应式布局 */
+        @media (max-width: 600px) {
+            .model-health-check-timeout-concurrency {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .model-health-check,
+            .model-timeout,
+            .model-concurrency {
+                margin-right: 0;
+                margin-bottom: 15px;
+            }
         }
     </style>
     <script>
@@ -405,11 +437,15 @@
             <div class="model-health-check-timeout">
                 <div class="model-health-check">
                     <input type="checkbox" id="model_health_check" name="model_health_check">
-                    <label for="model_health_check">模型测活</label>
+                    <label for="model_health_check">同时进行模型测活？</label>
                 </div>
                 <div class="model-timeout">
-                    <label for="model_timeout">设置测活请求超时时间（秒）:</label>
+                    <label for="model_timeout">设置测活请求超时(秒):</label>
                     <input type="number" id="model_timeout" name="model_timeout" placeholder="10" value="10" min="1">
+                </div>
+                <div class="model-concurrency">
+                    <label for="model_concurrency">设置测活请求并发数量:</label>
+                    <input type="number" id="model_concurrency" name="model_concurrency" placeholder="5" value="5" min="1">
                 </div>
             </div>
             <div class="submit-container">

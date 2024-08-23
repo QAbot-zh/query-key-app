@@ -3,6 +3,7 @@ import datetime
 from flask import Flask, request, g, render_template, jsonify
 from werkzeug.middleware.proxy_fix import ProxyFix
 import time
+import concurrent.futures
 
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app)
@@ -18,6 +19,7 @@ def submit():
     api_key_head = request.form.get('api_key_head')
     model_health_check = request.form.get('model_health_check') == 'on'
     model_timeout = int(request.form.get('model_timeout', 10))  # 默认超时时间为10秒
+    model_concurrency = int(request.form.get('model_concurrency', 5))  # 默认并发数为5
 
     if api_info:
         # 使用正则表达式提取接口地址和API密钥
@@ -60,16 +62,24 @@ def submit():
                 support_models = "支持的模型列表：\n\n" + "\n".join([item['id'] for item in response_json['data']])
             else:
                 not_chat_pattern = r'^(dall-e|mj|midjourney|stable-diffusion|playground|flux|swap_face|tts-|whisper-|text-|emb-)'
-                for item in response_json['data']:
-                    model_name = item['id']
-                    if re.match(not_chat_pattern, model_name) or ("flux" in model_name):
-                        not_chat_models.append(model_name)
-                    else:
-                        response = test_one_model(api_url, api_key, model_name, model_timeout)
+                with concurrent.futures.ThreadPoolExecutor(max_workers=model_concurrency) as executor:
+                    future_to_model = {
+                        executor.submit(test_one_model, api_url, api_key, item['id'], model_timeout): item['id'] 
+                        for item in response_json['data']
+                        if not re.match(not_chat_pattern, item['id']) and "flux" not in item['id']
+                    }
+                    for future in concurrent.futures.as_completed(future_to_model):
+                        model_name, response = future.result()
                         if (response.status_code == 200 or response.status_code == 201) and "error" not in response.json():
                             available_chat_models.append(model_name)
                         else:
                             unavailable_chat_models.append(model_name)
+                
+                for item in response_json['data']:
+                    model_name = item['id']
+                    if re.match(not_chat_pattern, model_name) or ("flux" in model_name):
+                        not_chat_models.append(model_name)
+
                 support_models = "已校验可用chat模型：\n" + "\n".join(available_chat_models) + "\n\n" + "已校验不可用chat模型：\n" + "\n".join(unavailable_chat_models) + "\n\n" + "未校验模型（不对非chat模型进行校验）：\n" + "\n".join(not_chat_models)
         except:
             support_models = "已校验可用chat模型：\n" + "\n".join(available_chat_models) + "\n\n" + "已校验不可用chat模型：\n" + "\n".join(unavailable_chat_models) + "\n\n" + "未校验模型（不对非chat模型进行校验）：\n" + "\n".join(not_chat_models)
@@ -121,7 +131,7 @@ def test_one_model(api_url, api_key, model_name, model_timeout=10):
         "max_tokens": 2
     }
     response = requests.post(test_url, headers=headers, json=data, timeout=model_timeout)
-    return response
+    return model_name,response
 
 @app.route('/test_model', methods=['POST'])
 def test_model():
@@ -133,7 +143,7 @@ def test_model():
         return jsonify({"success": False, "message": "Missing API URL, API Key, or Model Name"}), 400
 
     tic = time.time()
-    response = test_one_model(api_url, api_key, model_name)
+    model_name,response = test_one_model(api_url, api_key, model_name)
     duration = time.time() - tic
 
     if response.status_code == 200 or response.status_code == 201:
