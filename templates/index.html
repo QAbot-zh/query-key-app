@@ -198,7 +198,7 @@
         .model-health-check {
             display: flex;
             align-items: center;
-            margin-top: 10px;
+            margin-right: 20px; /* 增加右边距以分隔复选框和超时时间 */
         }
 
         /* 样式复选框 */
@@ -223,6 +223,28 @@
 
         .model-health-check label:hover {
             color: #4CAF50;
+        }
+
+        /* 样式超时时间容器 */
+        .model-timeout {
+            display: flex;
+            align-items: center;
+        }
+
+        /* 样式超时时间输入框 */
+        .model-timeout input[type="number"] {
+            margin-left: 10px;
+            height: 20px;
+            width: 60px; /* 可以根据需要调整宽度 */
+        }
+
+        /* 样式组合容器 */
+        .model-health-check-timeout {
+            display: flex;
+            justify-content: space-between;
+            margin-right: 20px; /* 增加右边距以分隔复选框和超时时间 */
+            margin-top: 10px;
+            margin-bottom: 10px;
         }
     </style>
     <script>
@@ -257,6 +279,7 @@
             }
             // 获取复选框状态
             var modelHealthCheck = document.getElementById('model_health_check').checked;
+            var modelTimeout = document.getElementById('model_timeout').value;
 
             // 显示加载指示器
             const loading = document.getElementById('loading');
@@ -275,6 +298,12 @@
             hiddenHealthCheckInput.name = 'model_health_check';
             hiddenHealthCheckInput.value = modelHealthCheck;
             form.appendChild(hiddenHealthCheckInput);
+
+            var hiddenTimeoutInput = document.createElement('input');
+            hiddenTimeoutInput.type = 'hidden';
+            hiddenTimeoutInput.name = 'model_timeout';
+            hiddenTimeoutInput.value = modelTimeout;
+            form.appendChild(hiddenTimeoutInput);
 
             form.submit();
         }
@@ -372,10 +401,16 @@
                 <input type="text" id="model_name" name="model_name" placeholder="模型名称，如：gpt-3.5-turbo">
                 <input type="button" name="test_model" value="测试单个chat模型" onclick="testModel()">
             </div>
-            <!-- Add the checkbox for Model Health Check -->
-            <div class="model-health-check">
-                <input type="checkbox" id="model_health_check" name="model_health_check">
-                <label for="model_health_check">是否批量测活</label>
+            <!-- Combined container for Model Health Check and Timeout -->
+            <div class="model-health-check-timeout">
+                <div class="model-health-check">
+                    <input type="checkbox" id="model_health_check" name="model_health_check">
+                    <label for="model_health_check">模型测活</label>
+                </div>
+                <div class="model-timeout">
+                    <label for="model_timeout">设置测活请求超时时间（秒）:</label>
+                    <input type="number" id="model_timeout" name="model_timeout" placeholder="10" value="10" min="1">
+                </div>
             </div>
             <div class="submit-container">
                 <input type="submit" name="action" value="拉取模型列表" class="submit-query">
@@ -396,7 +431,7 @@
             {% if '已校验不可用chat模型：' in response %}
                 <div class="invalid-models">
                     <h3>已校验不可用chat模型：</h3>
-                    <pre>{{ response.split('已校验不可用chat模型：')[1].split('未校验模型（非chat模型）：')[0].strip() }}</pre>
+                    <pre>{{ response.split('已校验不可用chat模型：')[1].split('未校验模型（不对非chat模型进行校验）：')[0].strip() }}</pre>
                 </div>
             {% endif %}
 

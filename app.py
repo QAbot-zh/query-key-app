@@ -17,6 +17,7 @@ def submit():
     api_info = request.form.get('api_info')
     api_key_head = request.form.get('api_key_head')
     model_health_check = request.form.get('model_health_check') == 'on'
+    model_timeout = int(request.form.get('model_timeout', 10))  # 默认超时时间为10秒
 
     if api_info:
         # 使用正则表达式提取接口地址和API密钥
@@ -52,26 +53,26 @@ def submit():
     if action == '拉取模型列表':
         model_url = f"{base_url}/v1/models"
         response = requests.get(model_url, headers=headers)
+        available_chat_models,unavailable_chat_models,not_chat_models = [],[],[]
         try:
             response_json = response.json()
             if not model_health_check:
                 support_models = "支持的模型列表：\n\n" + "\n".join([item['id'] for item in response_json['data']])
             else:
-                available_chat_models,unavailable_chat_models,not_chat_models = [],[],[]
                 not_chat_pattern = r'^(dall-e|mj|midjourney|stable-diffusion|playground|flux|swap_face|tts-|whisper-|text-|emb-)'
                 for item in response_json['data']:
                     model_name = item['id']
                     if re.match(not_chat_pattern, model_name) or ("flux" in model_name):
                         not_chat_models.append(model_name)
                     else:
-                        response = test_one_model(api_url, api_key, model_name)
-                        if response.status_code == 200 or response.status_code == 201:
+                        response = test_one_model(api_url, api_key, model_name, model_timeout)
+                        if (response.status_code == 200 or response.status_code == 201) and "error" not in response.json():
                             available_chat_models.append(model_name)
                         else:
                             unavailable_chat_models.append(model_name)
                 support_models = "已校验可用chat模型：\n" + "\n".join(available_chat_models) + "\n\n" + "已校验不可用chat模型：\n" + "\n".join(unavailable_chat_models) + "\n\n" + "未校验模型（不对非chat模型进行校验）：\n" + "\n".join(not_chat_models)
         except:
-            support_models = response.text
+            support_models = "已校验可用chat模型：\n" + "\n".join(available_chat_models) + "\n\n" + "已校验不可用chat模型：\n" + "\n".join(unavailable_chat_models) + "\n\n" + "未校验模型（不对非chat模型进行校验）：\n" + "\n".join(not_chat_models)
 
         return render_template('index.html', response=support_models, api_info=api_info, api_url=api_url, api_key=api_key, api_key_head=api_key_head)
     elif action == '检查额度':
@@ -105,7 +106,7 @@ def submit():
 
         return render_template('index.html', response=show_info, api_info=api_info, api_url=api_url, api_key=api_key, api_key_head=api_key_head)
 
-def test_one_model(api_url, api_key, model_name):
+def test_one_model(api_url, api_key, model_name, model_timeout=10):
     headers = {
         'Authorization': f'Bearer {api_key}',
         'Content-Type': 'application/json'
@@ -119,7 +120,7 @@ def test_one_model(api_url, api_key, model_name):
         ],
         "max_tokens": 2
     }
-    response = requests.post(test_url, headers=headers, json=data)
+    response = requests.post(test_url, headers=headers, json=data, timeout=model_timeout)
     return response
 
 @app.route('/test_model', methods=['POST'])
