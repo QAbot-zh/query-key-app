@@ -54,9 +54,9 @@ def submit():
     
     if action == '拉取模型列表':
         model_url = f"{base_url}/v1/models"
-        response = requests.get(model_url, headers=headers, timeout=model_timeout)
         available_chat_models,unavailable_chat_models,not_chat_models = [],[],[]
         try:
+            response = requests.get(model_url, headers=headers, timeout=model_timeout)
             response_json = response.json()
             if not model_health_check:
                 support_models = "支持的模型列表：\n\n" + "\n".join([item['id'] for item in response_json['data']])
@@ -88,8 +88,8 @@ def submit():
     elif action == '检查额度':
         # 获取总额度
         quota_url = f"{base_url}/dashboard/billing/subscription"
-        response = requests.get(quota_url, headers=headers, timeout=model_timeout)
         try:
+            response = requests.get(quota_url, headers=headers, timeout=model_timeout)
             response_json = response.json()
             quota_info = response_json.get('hard_limit_usd', 0)
             quota_info = f"{quota_info:.2f} $"
@@ -101,8 +101,8 @@ def submit():
         start_date = f"{year}-{month:02d}-01"
         end_date = f"{year}-{month:02d}-{day}"
         usage_url = f"{base_url}/dashboard/billing/usage?start_date={start_date}&end_date={end_date}"
-        response = requests.get(usage_url, headers=headers, timeout=model_timeout)
         try:
+            response = requests.get(usage_url, headers=headers, timeout=model_timeout)
             response_json = response.json()
             used_info = response_json.get('total_usage', 0)/100
             used_info = f"{used_info:.2f} $"
@@ -112,7 +112,7 @@ def submit():
         try:
             remain_info = quota_info - used_info
             remain_info = f"{remain_info:.2f} $"
-        except Exception:
+        except:
             remain_info = 0
 
         show_info = f"可用额度为: {remain_info}\n\n已用额度为: {used_info}\n\n  总额度为: {quota_info}"
@@ -133,7 +133,13 @@ def test_one_model(api_url, api_key, model_name, model_timeout=10):
         ],
         "max_tokens": 2
     }
-    response = requests.post(test_url, headers=headers, json=data, timeout=model_timeout)
+    try:
+        response = requests.post(test_url, headers=headers, json=data, timeout=model_timeout)
+    except Exception as e:
+        response = requests.Response()  # 创建一个空的 Response 对象
+        response.status_code = 500  # 设置状态码为 500，表示服务器错误
+        response.reason = str(e)  # 设置错误原因
+        response._content = b'{"error": "Model request failed"}'  # 设置响应内容，可以自定义错误信息
     return model_name,response
 
 @app.route('/test_model', methods=['POST'])
