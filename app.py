@@ -54,7 +54,7 @@ def submit():
     
     if action == '拉取模型列表':
         model_url = f"{base_url}/v1/models"
-        response = requests.get(model_url, headers=headers)
+        response = requests.get(model_url, headers=headers, timeout=model_timeout)
         available_chat_models,unavailable_chat_models,not_chat_models = [],[],[]
         try:
             response_json = response.json()
@@ -88,31 +88,34 @@ def submit():
     elif action == '检查额度':
         # 获取总额度
         quota_url = f"{base_url}/dashboard/billing/subscription"
-        response = requests.get(quota_url, headers=headers)
+        response = requests.get(quota_url, headers=headers, timeout=model_timeout)
         try:
             response_json = response.json()
             quota_info = response_json.get('hard_limit_usd', 0)
-        except ValueError:
-            quota_info = 'Invalid JSON response'
+            quota_info = f"{quota_info:.2f} $"
+        except:
+            quota_info = '无法获得额度信息，api 接口可能存在问题'
         # 获取使用情况
         today = datetime.datetime.now()
         year, month, day = today.year, today.month, today.day
         start_date = f"{year}-{month:02d}-01"
         end_date = f"{year}-{month:02d}-{day}"
         usage_url = f"{base_url}/dashboard/billing/usage?start_date={start_date}&end_date={end_date}"
-        response = requests.get(usage_url, headers=headers)
+        response = requests.get(usage_url, headers=headers, timeout=model_timeout)
         try:
             response_json = response.json()
             used_info = response_json.get('total_usage', 0)/100
-        except ValueError:
-            used_info = 'Invalid JSON response'
+            used_info = f"{used_info:.2f} $"
+        except:
+            used_info =  '无法获得已用额度信息，api 接口可能存在问题'
 
         try:
             remain_info = quota_info - used_info
-            show_info = f"可用额度为: {remain_info:.2f} $ \n\n已用额度为: {used_info:.2f} $ \n\n  总额度为: {quota_info:.2f} $"
+            remain_info = f"{remain_info:.2f} $"
         except Exception:
             remain_info = 0
-            show_info = "检查额度失败"
+
+        show_info = f"可用额度为: {remain_info}\n\n已用额度为: {used_info}\n\n  总额度为: {quota_info}"
 
         return render_template('index.html', response=show_info, api_info=api_info, api_url=api_url, api_key=api_key, api_key_head=api_key_head)
 
