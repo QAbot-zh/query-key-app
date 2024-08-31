@@ -1,4 +1,4 @@
-import requests, re, os, sys
+import requests, re, os
 import datetime
 from flask import Flask, request, render_template, jsonify
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -35,8 +35,8 @@ def submit():
             api_key_lazy = api_key_match.group(0)
 
     action = request.form['action']
-    api_url = request.form['api_url']
-    api_key = request.form['api_key']
+    api_url = request.form['api_url'].strip().rstrip('/')
+    api_key = request.form['api_key'].strip()
 
     if not api_url or not api_key:
         if not api_url_lazy or not api_key_lazy:
@@ -47,13 +47,14 @@ def submit():
     
     # 使用正则表达式移除以 /v1 起始的部分
     base_url = re.sub(r'^/v1.*', '', api_url)
+    base_url = base_url.strip().rstrip('/')
     headers = {
         'Content-Type': 'application/json',
         'Authorization': f'Bearer {api_key}'
         }
     
     if action == '拉取模型列表':
-        model_url = f"{base_url}/v1/models"
+        model_url = "{}/v1/models".format(base_url)
         test_results = {
             "available_chat_models": [],
             "inconsistent_chat_models": [],
@@ -92,15 +93,15 @@ def submit():
                                 test_results["available_chat_models"].append({
                                     "status": "模型一致可用",
                                     "model_name": model_name,
-                                    "response_time": f"{response.elapsed.total_seconds():.2f}",
+                                    "response_time": "{:.2f}".format(response.elapsed.total_seconds()),
                                     "remarks": "状态良好"
                                 })
                             else:
                                 test_results["inconsistent_chat_models"].append({
                                     "status": "模型可用但不一致<br>（即返回模型名称与测试模型名称不一致，注意甄别真假或模型重映射）",
                                     "model_name": model_name,
-                                    "response_time": f"{response.elapsed.total_seconds():.2f}",
-                                    "remarks": f"返回模型名称：{output_model}"
+                                    "response_time": "{:.2f}".format(response.elapsed.total_seconds()),
+                                    "remarks": "返回模型名称：{}".format(output_model)
                                 })
                         else:
                             test_results["unavailable_chat_models"].append({
@@ -116,7 +117,7 @@ def submit():
         return render_template('index.html', response_text=response_text, api_info=api_info, api_url=api_url, api_key=api_key, api_key_head=api_key_head)
     elif action == '检查额度':
         # 获取总额度
-        quota_url = f"{base_url}/dashboard/billing/subscription"
+        quota_url = "{}/dashboard/billing/subscription".format(base_url)
         try:
             response = requests.get(quota_url, headers=headers, timeout=model_timeout)
             response_json = response.json()
@@ -126,9 +127,9 @@ def submit():
         # 获取使用情况
         today = datetime.datetime.now()
         year, month, day = today.year, today.month, today.day
-        start_date = f"{year}-{month:02d}-01"
-        end_date = f"{year}-{month:02d}-{day}"
-        usage_url = f"{base_url}/dashboard/billing/usage?start_date={start_date}&end_date={end_date}"
+        start_date = "{}-{:02d}-01".format(year, month)
+        end_date = "{}-{:02d}-{}".format(year, month, day)
+        usage_url = "{}/dashboard/billing/usage?start_date={}&end_date={}".format(base_url, start_date, end_date)
         try:
             response = requests.get(usage_url, headers=headers, timeout=model_timeout)
             response_json = response.json()
@@ -142,20 +143,21 @@ def submit():
             remain_info = 0
 
         quota = {
-            "available": f"{remain_info:.2f} $",
-            "used": f"{used_info:.2f} $",
-            "total": f"{quota_info:.2f} $"
+            "available": "{:.2f} $".format(remain_info),
+            "used": "{:.2f} $".format(used_info),
+            "total": "{:.2f} $".format(quota_info)
         }
+
 
         return render_template('index.html', quota=quota, api_info=api_info, api_url=api_url, api_key=api_key, api_key_head=api_key_head)
 
 def test_one_model(api_url, api_key, model_name, model_timeout=10):
     headers = {
-        'Authorization': f'Bearer {api_key}',
+        'Authorization': 'Bearer {}'.format(api_key),
         'Content-Type': 'application/json'
     }
 
-    test_url = f"{api_url}/v1/chat/completions"
+    test_url = "{}/v1/chat/completions".format(api_url)
     data = {
         "model": model_name,
         "messages": [
@@ -174,9 +176,9 @@ def test_one_model(api_url, api_key, model_name, model_timeout=10):
 
 @app.route('/test_model', methods=['POST'])
 def test_model():
-    api_url = request.json.get('api_url')
-    api_key = request.json.get('api_key')
-    model_name = request.json.get('model_name')
+    api_url = request.json.get('api_url').strip().rstrip('/')
+    api_key = request.json.get('api_key').strip()
+    model_name = request.json.get('model_name').strip()
 
     if not api_url or not api_key or not model_name:
         return jsonify({"success": False, "message": "Missing API URL, API Key, or Model Name"}), 400
@@ -191,5 +193,4 @@ def test_model():
         return jsonify({"success": False, "message": response.text}), response.status_code
 
 if __name__ == '__main__':
-    print("python version: ",sys.version)
     app.run(host='0.0.0.0', port=os.getenv("PORT", default=5000), debug=True)
