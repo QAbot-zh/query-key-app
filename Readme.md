@@ -26,5 +26,5 @@
 
 * 新增feature：模型可用性检测
 
-![available_models](模型可用性检测.png)
+![available_models](新版UI.png)
 
