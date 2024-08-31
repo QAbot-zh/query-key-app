@@ -1,6 +1,6 @@
-import requests, re, os
+import requests, re, os, sys
 import datetime
-from flask import Flask, request, g, render_template, jsonify
+from flask import Flask, request, render_template, jsonify
 from werkzeug.middleware.proxy_fix import ProxyFix
 import time
 import concurrent.futures
@@ -191,4 +191,5 @@ def test_model():
         return jsonify({"success": False, "message": response.text}), response.status_code
 
 if __name__ == '__main__':
+    print("python version: ",sys.version)
     app.run(host='0.0.0.0', port=os.getenv("PORT", default=5000), debug=True)
