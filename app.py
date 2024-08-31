@@ -143,14 +143,19 @@ def submit():
             remain_info = 0
 
         quota = {
-            "available": "{:.2f} $".format(remain_info),
-            "used": "{:.2f} $".format(used_info),
-            "total": "{:.2f} $".format(quota_info)
+            "available": format_value(remain_info),
+            "used": format_value(used_info),
+            "total": format_value(quota_info)
         }
 
 
         return render_template('index.html', quota=quota, api_info=api_info, api_url=api_url, api_key=api_key, api_key_head=api_key_head)
-
+def format_value(value):
+    try:
+        return "{:.2f} $".format(float(value))
+    except ValueError:
+        return str(value)
+    
 def test_one_model(api_url, api_key, model_name, model_timeout=10):
     headers = {
         'Authorization': 'Bearer {}'.format(api_key),
