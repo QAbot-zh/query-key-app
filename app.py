@@ -54,37 +54,66 @@ def submit():
     
     if action == '拉取模型列表':
         model_url = f"{base_url}/v1/models"
-        available_chat_models,unavailable_chat_models,not_chat_models = [],[],[]
+        test_results = {
+            "available_chat_models": [],
+            "inconsistent_chat_models": [],
+            "unavailable_chat_models": [],
+            "not_chat_models": []
+        }
         try:
             response = requests.get(model_url, headers=headers, timeout=model_timeout)
             response_json = response.json()
             if not model_health_check:
-                support_models = "支持的模型列表：\n\n" + "\n".join([item['id'] for item in response_json['data']])
+                response_text = ",".join([item['id'] for item in response_json['data']])
             else:
-                not_chat_pattern = r'^(dall-e|mj|midjourney|stable-diffusion|playground|flux|swap_face|tts-|whisper-|text-|emb-)'
+                not_chat_pattern = r'^(dall|mj|midjourney|stable-diffusion|playground|flux|swap_face|tts|whisper|text|emb|luma|vidu|pdf|suno|pika|chirp|domo|runway|cogvideo)'
+                waiting_test_models = []
+                for item in response_json['data']:
+                    model_name = item['id']
+                    if re.match(not_chat_pattern, model_name) or any(keyword in model_name for keyword in ["image","audio","video","music","pdf","flux","suno","embed"]):
+                        test_results["not_chat_models"].append({
+                            "status": "未校验模型",
+                            "model_name": model_name,
+                            "response_time": "-",
+                            "remarks": "非chat模型暂不进行校验\n（image\\audio\\video\music...）"
+                        })
+                    else:
+                        waiting_test_models.append(model_name)
                 with concurrent.futures.ThreadPoolExecutor(max_workers=model_concurrency) as executor:
                     future_to_model = {
-                        executor.submit(test_one_model, api_url, api_key, item['id'], model_timeout): item['id'] 
-                        for item in response_json['data']
-                        if not re.match(not_chat_pattern, item['id']) and "flux" not in item['id']
+                        executor.submit(test_one_model, api_url, api_key, model, model_timeout): model 
+                        for model in waiting_test_models
                     }
                     for future in concurrent.futures.as_completed(future_to_model):
                         model_name, response = future.result()
                         if (response.status_code == 200 or response.status_code == 201) and "error" not in response.json():
-                            available_chat_models.append(model_name)
+                            output_model = response.json()["model"]
+                            if model_name == output_model:
+                                test_results["available_chat_models"].append({
+                                    "status": "模型一致可用",
+                                    "model_name": model_name,
+                                    "response_time": f"{response.elapsed.total_seconds():.2f}",
+                                    "remarks": "状态良好"
+                                })
+                            else:
+                                test_results["inconsistent_chat_models"].append({
+                                    "status": "模型可用但不一致<br>（即返回模型名称与测试模型名称不一致，注意甄别真假或模型重映射）",
+                                    "model_name": model_name,
+                                    "response_time": f"{response.elapsed.total_seconds():.2f}",
+                                    "remarks": f"返回模型名称：{output_model}"
+                                })
                         else:
-                            unavailable_chat_models.append(model_name)
-                
-                for item in response_json['data']:
-                    model_name = item['id']
-                    if re.match(not_chat_pattern, model_name) or ("flux" in model_name):
-                        not_chat_models.append(model_name)
-
-                support_models = "已校验可用chat模型：\n" + "\n".join(available_chat_models) + "\n\n" + "已校验不可用chat模型：\n" + "\n".join(unavailable_chat_models) + "\n\n" + "未校验模型（不对非chat模型进行校验）：\n" + "\n".join(not_chat_models)
+                            test_results["unavailable_chat_models"].append({
+                                "status": "模型不可用！！！",
+                                "model_name": model_name,
+                                "response_time": "-",
+                                "remarks": "超时或无响应"
+                            })
+                return render_template('index.html', test_results=test_results, api_info=api_info, api_url=api_url, api_key=api_key,    api_key_head=api_key_head)
         except:
-            support_models = "已校验可用chat模型：\n" + "\n".join(available_chat_models) + "\n\n" + "已校验不可用chat模型：\n" + "\n".join(unavailable_chat_models) + "\n\n" + "未校验模型（不对非chat模型进行校验）：\n" + "\n".join(not_chat_models)
+            response_text = "无法获取模型列表，api 接口可能存在问题"
 
-        return render_template('index.html', response=support_models, api_info=api_info, api_url=api_url, api_key=api_key, api_key_head=api_key_head)
+        return render_template('index.html', response_text=response_text, api_info=api_info, api_url=api_url, api_key=api_key, api_key_head=api_key_head)
     elif action == '检查额度':
         # 获取总额度
         quota_url = f"{base_url}/dashboard/billing/subscription"
@@ -92,7 +121,6 @@ def submit():
             response = requests.get(quota_url, headers=headers, timeout=model_timeout)
             response_json = response.json()
             quota_info = response_json.get('hard_limit_usd', 0)
-            quota_info = f"{quota_info:.2f} $"
         except:
             quota_info = '无法获得额度信息，api 接口可能存在问题'
         # 获取使用情况
@@ -105,19 +133,21 @@ def submit():
             response = requests.get(usage_url, headers=headers, timeout=model_timeout)
             response_json = response.json()
             used_info = response_json.get('total_usage', 0)/100
-            used_info = f"{used_info:.2f} $"
         except:
             used_info =  '无法获得已用额度信息，api 接口可能存在问题'
 
         try:
             remain_info = quota_info - used_info
-            remain_info = f"{remain_info:.2f} $"
         except:
             remain_info = 0
 
-        show_info = f"可用额度为: {remain_info}\n\n已用额度为: {used_info}\n\n  总额度为: {quota_info}"
+        quota = {
+            "available": f"{remain_info:.2f} $",
+            "used": f"{used_info:.2f} $",
+            "total": f"{quota_info:.2f} $"
+        }
 
-        return render_template('index.html', response=show_info, api_info=api_info, api_url=api_url, api_key=api_key, api_key_head=api_key_head)
+        return render_template('index.html', quota=quota, api_info=api_info, api_url=api_url, api_key=api_key, api_key_head=api_key_head)
 
 def test_one_model(api_url, api_key, model_name, model_timeout=10):
     headers = {

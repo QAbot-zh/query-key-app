@@ -2,15 +2,29 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title> API 信息查询 </title>
-    <style>
+        <style>
         body {
             font-family: Arial, sans-serif;
             margin: 40px;
         }
+        .divider {
+            border: 0;
+            height: 2px;
+            background: #ccc; /* 浅色 */
+            margin: 20px 0;
+        }
+        .copyright {
+            background-color: #f1f1f1;
+            text-align: center;
+            padding: 10px 0;
+            box-shadow: 0 -1px 5px rgba(0, 0, 0, 0.1);
+            font-size: 14px;
+        }
         .container {
             width: 100%;
-            max-width: 600px;
+            max-width: 1000px;
             margin: auto;
             padding: 20px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
@@ -178,18 +192,6 @@
             margin-bottom: 20px; /* 分隔不同部分的间距 */
         }
 
-        .valid-models {
-            color: green;
-        }
-
-        .invalid-models {
-            color: red;
-        }
-
-        .unchecked-models {
-            color: orange;
-        }
-
         .default-response {
             font-size: 16px;
             color: black;
@@ -262,6 +264,90 @@
             display: flex;
             align-items: center;
             margin-bottom: 10px; /* 添加底部边距 */
+        }
+        /* 额度显示样式 */
+        .quota-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .quota-table th, .quota-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        .quota-table th {
+            background-color: #f2f2f2;
+            color: black;
+        }
+
+        .quota-table td {
+            font-weight: bold;
+        }
+        /* 模型列表显示样式 */
+        table.layui-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        table.layui-table th, table.layui-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        table.layui-table th {
+            background-color: #f2f2f2;
+            color: black;
+        }
+
+        .valid-models {
+            color: green;
+            font-weight: bold;
+        }
+
+        .inconsistent-models {
+            color: orange;
+            font-weight: bold;
+        }
+
+        .invalid-models {
+            color: red;
+            font-weight: bold;
+        }
+
+        .unchecked-models {
+            color: blue;
+            font-weight: bold;
+        }
+
+        tbody tr:hover {
+            background-color: #f1f1f1;
+        }
+        /* 模型复制按钮显示样式 */
+        .copy-buttons {
+            /* margin-top: 20px; */
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .copy-buttons input[type="button"] {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .copy-buttons input[type="button"]:hover {
+            background-color: #0056b3;
         }
 
         /* 响应式布局 */
@@ -392,6 +478,73 @@
                 showAlert("测试失败: " + error.message);
             });
         }
+        function copyConsistentModels(testResults) {
+            let consistentModels = '';
+            testResults.available_chat_models.forEach(function(model, index) {
+                consistentModels += model.model_name;
+                // 在每个模型后面加上逗号，除了最后一个模型
+                if (index < testResults.available_chat_models.length - 1) {
+                    consistentModels += ',';
+                }
+            });
+
+            if (consistentModels) {
+                navigator.clipboard.writeText(consistentModels.trim())
+                    .then(() => showAlert('一致模型已复制到剪贴板'))
+                    .catch(err => showAlert('复制失败: ' + err));
+            } else {
+                showAlert('没有找到一致模型的内容');
+            }
+        }
+
+        function copyAvailableModels(testResults) {
+            let consistentModels = '';
+            testResults.available_chat_models.forEach(function(model, index) {
+                consistentModels += model.model_name;
+                // 在每个模型后面加上逗号，除了最后一个模型
+                if (index < testResults.available_chat_models.length - 1) {
+                    consistentModels += ',';
+                }
+            });
+            testResults.inconsistent_chat_models.forEach(function(model, index) {
+                consistentModels += ',' + model.model_name;
+            });
+
+            if (consistentModels) {
+                navigator.clipboard.writeText(consistentModels.trim())
+                    .then(() => showAlert('可用模型已复制到剪贴板'))
+                    .catch(err => showAlert('复制失败: ' + err));
+            } else {
+                showAlert('没有找到可用模型的内容');
+            }
+        }
+        function copyUncheckedModels(testResults) {
+            let uncheckedModels = '';
+            testResults.not_chat_models.forEach(function(model, index) {
+                uncheckedModels += model.model_name;
+                // 在每个模型后面加上逗号，除了最后一个模型
+                if (index < testResults.available_chat_models.length - 1) {
+                    uncheckedModels += ',';
+                }
+            });
+
+            if (uncheckedModels) {
+                navigator.clipboard.writeText(uncheckedModels.trim())
+                    .then(() => showAlert('非chat模型已复制到剪贴板'))
+                    .catch(err => showAlert('复制失败: ' + err));
+            } else {
+                showAlert('没有找到非chat模型的内容');
+            }
+        }
+        function copyToClipboard(response_text) {
+            if (response_text) {
+                navigator.clipboard.writeText(response_text.trim())
+                    .then(() => showAlert('支持模型列表已复制到剪贴板'))
+                    .catch(err => showAlert('复制失败: ' + err));
+            } else {
+                showAlert('没有找到支持模型列表的内容');
+            }
+        }
         window.onload = function() {
             var apiInfo = document.getElementById('api_info').value.trim();
             var apiUrl = document.getElementById('api_url').value.trim();
@@ -455,36 +608,102 @@
             </div>
         </form>
         <div class="response-container">
-            <!-- 显示已校验可用chat模型的部分 -->
-            {% if '已校验可用chat模型：' in response %}
-            <div class="valid-models">
-                <h3>已校验可用chat模型：</h3>
-                <pre>{{ response.split('已校验可用chat模型：')[1].split('已校验不可用chat模型：')[0].strip() }}</pre>
-            </div>
+            {% if quota %}
+                <h2>额度信息</h2>
+                <table class="layui-table quota-table">
+                    <thead>
+                        <tr>
+                            <th>可用额度</th>
+                            <th>已用额度</th>
+                            <th>总额度</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>{{ quota.available }}</td>
+                            <td>{{ quota.used }}</td>
+                            <td>{{ quota.total }}</td>
+                        </tr>
+                    </tbody>
+                </table>
             {% endif %}
-
-            <!-- 显示已校验不可用chat模型的部分 -->
-            {% if '已校验不可用chat模型：' in response %}
-                <div class="invalid-models">
-                    <h3>已校验不可用chat模型：</h3>
-                    <pre>{{ response.split('已校验不可用chat模型：')[1].split('未校验模型（不对非chat模型进行校验）：')[0].strip() }}</pre>
+            {% if test_results %}
+                <div class="model-result">
+                    <br>
+                    <!-- 添加复制按钮 -->
+                    <div class="copy-buttons">
+                        <input type="button" value="复制一致模型" onclick="copyConsistentModels(testResults)">
+                        <input type="button" value="复制可用模型" onclick="copyAvailableModels(testResults)">
+                        <input type="button" value="复制未校验模型（非chat）" onclick="copyUncheckedModels(testResults)">
+                    </div>
+                    <!-- 测试结果表格显示 -->
+                    <table class="layui-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 25%;">状态</th>
+                                <th style="width: 30%;">测试模型名称</th>
+                                <th>响应时间 (秒)</th>
+                                <th style="width: 30%;">备注</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for category, models in test_results.items() %}
+                                {% for model in models %}
+                                <td class="
+                                    {% if category == 'available_chat_models' %} valid-models
+                                    {% elif category == 'inconsistent_chat_models' %} inconsistent-models
+                                    {% elif category == 'unavailable_chat_models' %} invalid-models
+                                    {% elif category == 'not_chat_models' %} unchecked-models
+                                    {% endif %}
+                                "> 
+                                    {{ model.status | safe}}
+                                </td>
+                                    <td>{{ model.model_name }}</td>
+                                    <td>{{ model.response_time }}</td>
+                                    <td>{{ model.remarks }}</td>
+                                </tr>
+                                {% endfor %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
+                <!-- 将 test_results 转为 JSON 并嵌入到页面 -->
+                <script type="text/javascript">
+                    var testResults = {{ test_results | tojson }};
+                </script>
             {% endif %}
-
-            <!-- 显示未校验模型（非chat模型）的部分 -->
-            {% if '未校验模型（不对非chat模型进行校验）：' in response %}
-                <div class="unchecked-models">
-                    <h3>未校验模型（不对非chat模型进行校验）：</h3>
-                    <pre>{{ response.split('未校验模型（不对非chat模型进行校验）：')[1].strip() }}</pre>
-                </div>
+            {% if response_text %}
+                <table class="layui-table">
+                    <tbody>
+                        <tr>
+                            <td style="width: 20%;">支持的模型列表</td>
+                            <td style="width: 60%;">
+                                <span id="response-text">{{ response_text }}</span>
+                            </td>
+                            <td style="width: 20%;">
+                                <!-- <button class="copy-buttons" onclick="copyToClipboard()">一键复制</button> -->
+                                <div class="copy-buttons">
+                                    <input type="button" value="一键复制" onclick="copyToClipboard(supportedModels)">
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            
+                <script type="text/javascript">
+                    var supportedModels = {{ response_text | tojson }};
+                </script>
             {% endif %}
-
-            <!-- 如果没有匹配任何部分，显示整个原有内容 -->
-            {% if not ('已校验可用chat模型：' in response or '已校验不可用chat模型：' in response or '未校验模型（不对非chat模型进行校验）：' in response) %}
-                <div class="default-response">
-                    <pre>{{ response }}</pre>
-                </div>
-            {% endif %}
+    </div>
+    <hr class="divider">
+    <div class="copyright">
+        <!-- 请保留对 Megasoft 和 Rick 的感谢 -->
+        <p>© 2024 LinuxDo 版权所有<br>
+            项目地址：<a href="https://github.com/QAbot-zh/query-key-app" target="_blank"><img 
+                src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub" width="20" height="20"> GitHub</a> | 项目开发：<a href="https://linux.do/u/zhong_little" target="_blank"><img
+                src="https://linux.do/user_avatar/linux.do/zhong_little/288/104887_2.png" alt="Megasoft" width="20" height="20"> Megasoft</a> | UI 创意参考：<a href="https://linux.do/u/rick" target="_blank"><img
+                src="https://linux.do/user_avatar/linux.do/rick/288/137821_2.png" alt="Rick" width="20" height="20"> Rick</a>
+            </p>
     </div>
 </body>
 </html>
